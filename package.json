@@ -1,0 +1,32 @@
+{
+  "name": "patchdb",
+  "description": "Patch is an implementation of an in-memory structured database with persistent file storage.",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "esnext": "src/index.ts",
+  "author": {
+    "name": "Kārlis Čerņavskis",
+    "email": "karliscern@gmail.com",
+    "url": "https://cernavskis.dev/"
+  },
+  "private": true,
+  "license": "CC0-1.0",
+  "scripts": {
+    "start": "node .",
+    "build": "tsc",
+    "build:watch": "tsc -w"
+  },
+  "dependencies": {
+    "fs-extra": "^10.0.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.1",
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^16.10.1",
+    "typescript": "next"
+  },
+  "engines": {
+    "node": "^16"
+  }
+}
