@@ -25,7 +25,7 @@ export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? 
 export class Table<
   HasPrimaryKey extends boolean = boolean,
   ContentSchema extends SchemaObj<HasPrimaryKey> = SchemaObj<HasPrimaryKey>
-> {
+> extends EventEmitter {
   private thisHasPrimaryKey: HasPrimaryKey;
   private content: HasPrimaryKey extends true ? { [key: string]: ContentSchema } : ContentSchema[];
   private schemaFromJson: (obj: JSONObject) => ContentSchema;
@@ -34,6 +34,7 @@ export class Table<
   private cachedContentJson?: JSONObject | JSONParsable[];
 
   constructor(hasPrimaryKey: HasPrimaryKey, schemaFromJson: (obj: JSONObject) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
+    super();
     this.thisHasPrimaryKey = hasPrimaryKey;
     if (this.hasPrimaryKey()) {
       //@ts-expect-error typescript is dumb
@@ -57,6 +58,7 @@ export class Table<
       this.content[(obj as { key: string }).key] = obj;
     }
     this.shouldUseCache = false;
+    this.emit("stateChange");
   }
 
   public get(key: HasPrimaryKey extends true ? string : number): ContentSchema | undefined {
@@ -73,6 +75,7 @@ export class Table<
     } else {
       (this.content as any)[key] = obj;
     }
+    this.emit("stateChange");
   }
 
   public toJson(): JSONObject | JSONParsable[] {
@@ -119,6 +122,14 @@ export class Database extends EventEmitter {
 
     this.once("ready", () => {
       if (options.autosave !== 0) {
+        for (const key in this.content.tables) {
+          if (Object.prototype.hasOwnProperty.call(this.content.tables, key)) {
+            const table = this.content.tables[key];
+            table.on("stateChange", () => {
+              this.shouldSave = true;
+            });
+          }
+        }
         const saveInterval = setTimeout(() => this.save(), options.autosave ?? 5000).unref();
         process.once("beforeExit", () => this.close());
         this.once("close", () => {
