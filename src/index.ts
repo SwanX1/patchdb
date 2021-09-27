@@ -1,5 +1,6 @@
 export {
+  BasicTable,
   Database,
   DatabaseOptions,
-  Table
+  Table,
 } from "./Database";

@@ -14,6 +14,14 @@ export interface DatabaseOptions {
 
 export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? { key: string } : {};
 
+export interface BasicTable<ContentSchema = {}> extends EventEmitter {
+  fromJson(obj: JSONParsable): { [key: string]: ContentSchema } | ContentSchema[];
+  toJson(): JSONParsable;
+  add(obj: ContentSchema): void;
+  get(key: string | number): ContentSchema | undefined;
+  set(key: string | number, obj: ContentSchema): void;
+}
+
 /**
  * This interface may seem confusing, however it is very simple.
  * If the property `hasPrimaryKey == false`, `content` is an array
@@ -22,7 +30,7 @@ export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? 
  * `ContentSchema` values are objects that contain a key called `key`,
  * which, obviously, stores the key.
  */
-export class Table<ContentSchema extends {} | { key: string } = {}> extends EventEmitter {
+export class Table<ContentSchema extends {} | { key: string } = {}> extends EventEmitter implements BasicTable<ContentSchema> {
   private content: { [key: string]: ContentSchema } | ContentSchema[];
   private schemaFromJson: (obj: JSONObject) => ContentSchema;
   private schemaToJson: (obj: ContentSchema) => JSONObject;
@@ -106,7 +114,7 @@ export class Database extends EventEmitter {
     ~Database.S_CLOSED &
     ~Database.S_STARTED;
   private file?: FileHandle;
-  private content: { tables: { [key: string]: Table } } = { tables: {} };
+  private content: { tables: { [key: string]: BasicTable } } = { tables: {} };
 
   constructor(options: DatabaseOptions) {
     super();
@@ -182,10 +190,16 @@ export class Database extends EventEmitter {
     for (const tableKey in fileContents.tables) {
       if (Object.prototype.hasOwnProperty.call(fileContents.tables, tableKey)) {
         const table = this.content.tables[tableKey];
-        const tableContent: { [key: string]: { key: string } } | {}[] = table.fromJson(fileContents.tables[tableKey]);
-        for (const key in tableContent) {
-          if (Object.prototype.hasOwnProperty.call(tableContent, key)) {
-            table.add(tableContent[key]);
+        const tableContent: { [key: string]: any } | any[] = table.fromJson(fileContents.tables[tableKey]);
+        if (Array.isArray(tableContent)) {
+          for (let index = 0; index < tableContent.length; index++) {
+            table.add(tableContent[index]);
+          }
+        } else {
+          for (const key in tableContent) {
+            if (Object.prototype.hasOwnProperty.call(tableContent, key)) {
+              table.add(tableContent[key]);
+            }
           }
         }
       }
@@ -201,7 +215,7 @@ export class Database extends EventEmitter {
     if (this.shouldSave && !this.isSaving) {
       this.isSaving = true;
       this.shouldSave = false;
-      const writeValue = Buffer.from(JSON.stringify(this.content, (_key, value) => value instanceof Table ? value.toJson() : value));
+      const writeValue = Buffer.from(JSON.stringify(this.content, (_key, value) => typeof value.toJson === "function" ? value.toJson() : value));
       this.file?.write(writeValue, 0, writeValue.length, 0);
       this.isSaving = false;
     }
@@ -215,7 +229,7 @@ export class Database extends EventEmitter {
     this.closed = true;
   }
 
-  public addTable(key: string, table: Table): Table {
+  public addTable(key: string, table: BasicTable): BasicTable {
     if (!this.started) {
       this.content.tables[key] = table;
       return table;
@@ -224,7 +238,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  public deleteTable(key: string): Table | undefined {
+  public deleteTable(key: string): BasicTable | undefined {
     if (!this.started) {
       const table = this.content.tables[key];
       delete this.content.tables[key];
@@ -234,7 +248,7 @@ export class Database extends EventEmitter {
     }
   }
 
-  public getTable(key: string): Table | undefined {
+  public getTable(key: string): BasicTable | undefined {
     return this.content.tables[key];
   }
 
