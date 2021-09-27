@@ -10,8 +10,13 @@
     "email": "karliscern@gmail.com",
     "url": "https://cernavskis.dev/"
   },
-  "private": true,
+  "private": false,
   "license": "CC0-1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/SwanX1/patchdb.git"
+  },
+  "bugs": "https://github.com/SwanX1/patchdb/issues",
   "scripts": {
     "start": "node .",
     "build": "tsc",
