@@ -47,7 +47,7 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
       this.content[(obj as { key: string }).key] = obj;
     }
     this.shouldUseCache = false;
-    this.emit("stateChange");
+    this.stateChange();
   }
 
   public get(key: string | number): ContentSchema | undefined {
@@ -64,7 +64,11 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
     } else {
       (this.content as any)[key] = obj;
     }
-    this.emit("stateChange");
+    this.stateChange();
+  }
+
+  public stateChange(): void {
+    this.emit("stateChange")
   }
 
   public toJson(): JSONObject | JSONParsable[] {
