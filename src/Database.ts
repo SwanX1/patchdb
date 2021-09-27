@@ -26,7 +26,6 @@ export class Table<
   HasPrimaryKey extends boolean = boolean,
   ContentSchema extends SchemaObj<HasPrimaryKey> = SchemaObj<HasPrimaryKey>
 > extends EventEmitter {
-  private thisHasPrimaryKey: HasPrimaryKey;
   private content: HasPrimaryKey extends true ? { [key: string]: ContentSchema } : ContentSchema[];
   private schemaFromJson: (obj: JSONObject) => ContentSchema;
   private schemaToJson: (obj: ContentSchema) => JSONObject;
@@ -35,8 +34,7 @@ export class Table<
 
   constructor(hasPrimaryKey: HasPrimaryKey, schemaFromJson: (obj: JSONObject) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
     super();
-    this.thisHasPrimaryKey = hasPrimaryKey;
-    if (this.hasPrimaryKey()) {
+    if (hasPrimaryKey) {
       //@ts-expect-error typescript is dumb
       this.content = {};
     } else {
@@ -45,10 +43,6 @@ export class Table<
     }
     this.schemaFromJson = schemaFromJson;
     this.schemaToJson = schemaToJson;
-  }
-
-  public hasPrimaryKey(): this is Table<true> {
-    return this.thisHasPrimaryKey;
   }
 
   public add(obj: ContentSchema): void {
