@@ -22,23 +22,18 @@ export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? 
  * `ContentSchema` values are objects that contain a key called `key`,
  * which, obviously, stores the key.
  */
-export class Table<
-  HasPrimaryKey extends boolean = boolean,
-  ContentSchema extends SchemaObj<HasPrimaryKey> = SchemaObj<HasPrimaryKey>
-> extends EventEmitter {
-  private content: HasPrimaryKey extends true ? { [key: string]: ContentSchema } : ContentSchema[];
+export class Table<ContentSchema extends {} | { key: string } = {}> extends EventEmitter {
+  private content: { [key: string]: ContentSchema } | ContentSchema[];
   private schemaFromJson: (obj: JSONObject) => ContentSchema;
   private schemaToJson: (obj: ContentSchema) => JSONObject;
   private shouldUseCache: boolean = false;
   private cachedContentJson?: JSONObject | JSONParsable[];
 
-  constructor(hasPrimaryKey: HasPrimaryKey, schemaFromJson: (obj: JSONObject) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
+  constructor(hasPrimaryKey: boolean, schemaFromJson: (obj: JSONObject) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
     super();
     if (hasPrimaryKey) {
-      //@ts-expect-error typescript is dumb
       this.content = {};
     } else {
-      //@ts-expect-error typescript is dumb
       this.content = [];
     }
     this.schemaFromJson = schemaFromJson;
@@ -55,7 +50,7 @@ export class Table<
     this.emit("stateChange");
   }
 
-  public get(key: HasPrimaryKey extends true ? string : number): ContentSchema | undefined {
+  public get(key: string | number): ContentSchema | undefined {
     if (typeof key === "number") {
       return (this.content as ContentSchema[])[key];
     } else {
@@ -63,7 +58,7 @@ export class Table<
     }
   }
 
-  public set(key: HasPrimaryKey extends true ? string : number, obj: ContentSchema | null): void {
+  public set(key: string | number, obj: ContentSchema | null): void {
     if (obj === null) {
       delete (this.content as any)[key];
     } else {
@@ -216,7 +211,7 @@ export class Database extends EventEmitter {
     this.closed = true;
   }
 
-  public addTable(key: string, table: Table<boolean, any>): Table {
+  public addTable(key: string, table: Table): Table {
     if (!this.started) {
       this.content.tables[key] = table;
       return table;
