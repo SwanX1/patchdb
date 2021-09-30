@@ -17,6 +17,13 @@
     "url": "git://github.com/SwanX1/patchdb.git"
   },
   "bugs": "https://github.com/SwanX1/patchdb/issues",
+  "keywords": [
+    "javascript",
+    "node",
+    "typescript",
+    "database",
+    "storage"
+  ],
   "scripts": {
     "start": "node .",
     "build": "tsc",
