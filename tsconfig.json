@@ -1,5 +1,4 @@
 {
-  "extends": "@tsconfig/node16/tsconfig.json",
   "include": [
     "src/**/*"
   ],
@@ -9,16 +8,22 @@
   ],
   "compilerOptions": {
     "alwaysStrict": true,
-    "outDir": "dist",
-    "esModuleInterop": true,
-    "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ESNext"],
+    "module": "CommonJS",
     "noImplicitAny": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "ESNext"
   }
 }

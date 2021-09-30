@@ -118,6 +118,7 @@ The method will also apply any existing data from the file to your added tables,
 This is a very simple implementation of a database and a table class, which means you can extend it!<br>
 You can make custom methods for tables by implementing BasicTable.<br>
 The database just needs to know **from what** and **to what** convert the table data, and how to modify the table's data, it's accomplished with the BasicTable interface.<br>
+If there's a `toJson` function on any object when parsing JSON to store, the database will use it.<br>
 When implementing the BasicTable interface, you also need to extend the event emitter. The database depends on that for tables to notify the database that data has changed.<br>
 The only event the database is listening to from tables is `"stateChange"`. If any data has changed, emit that event so that the database can autosave if required.<br>
 
