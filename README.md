@@ -121,6 +121,7 @@ The database just needs to know **from what** and **to what** convert the table 
 If there's a `toJson` function on any object when parsing JSON to store, the database will use it.<br>
 When implementing the BasicTable interface, you also need to extend the event emitter. The database depends on that for tables to notify the database that data has changed.<br>
 The only event the database is listening to from tables is `"stateChange"`. If any data has changed, emit that event so that the database can autosave if required.<br>
+Tables don't actually look for changes in their entries, the entries have to emit the table event themselves with `table.emit("stateChange")`<br>
 
 Example table implementation:
 ```typescript

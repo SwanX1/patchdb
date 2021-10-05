@@ -14,12 +14,13 @@ export interface DatabaseOptions {
 
 export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? { key: string } : {};
 
-export interface BasicTable<ContentSchema = {}> extends EventEmitter {
+export interface BasicTable<ContentSchema extends any = unknown> extends EventEmitter {
   fromJson(obj: JSONParsable): { [key: string]: ContentSchema } | ContentSchema[];
   toJson(): JSONParsable;
   add(obj: ContentSchema): void;
   get(key: string | number): ContentSchema | undefined;
   set(key: string | number, obj: ContentSchema): void;
+  on(event: "stateChange", listener: () => void): this;
 }
 
 /**
@@ -46,6 +47,7 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
     }
     this.schemaFromJson = schemaFromJson;
     this.schemaToJson = schemaToJson;
+    this.on("stateChange", () => this.shouldUseCache = false);
   }
 
   public add(obj: ContentSchema): void {
@@ -54,7 +56,6 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
     } else {
       this.content[(obj as { key: string }).key] = obj;
     }
-    this.shouldUseCache = false;
     this.stateChange();
   }
 
@@ -76,7 +77,17 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
   }
 
   public stateChange(): void {
-    this.emit("stateChange")
+    this.emit("stateChange");
+  }
+
+  public override on(eventName: "stateChange", listener: () => void): this;
+  public override on(eventName: string | symbol, listener: (...args: any[]) => void): this {
+    return super.on(eventName, listener);
+  }
+
+  public override once(eventName: "stateChange", listener: () => void): this;
+  public override once(eventName: string | symbol, listener: (...args: any[]) => void): this {
+    return super.once(eventName, listener);
   }
 
   public toJson(): JSONObject | JSONParsable[] {
@@ -109,6 +120,7 @@ export class Database extends EventEmitter {
   private static S_STARTED = 1 << 2;
 
   private path: string;
+  private autosave: number;
   private state: number =
     ~Database.S_SHOULD_SAVE &
     ~Database.S_CLOSED &
@@ -120,18 +132,11 @@ export class Database extends EventEmitter {
     super();
 
     this.path = options.path;
+    this.autosave = options.autosave ?? 0;
 
     this.once("ready", () => {
-      if (options.autosave !== 0) {
-        for (const key in this.content.tables) {
-          if (Object.prototype.hasOwnProperty.call(this.content.tables, key)) {
-            const table = this.content.tables[key];
-            table.on("stateChange", () => {
-              this.shouldSave = true;
-            });
-          }
-        }
-        const saveInterval = setTimeout(() => this.save(), options.autosave ?? 5000).unref();
+      if (this.autosave !== 0) {
+        const saveInterval = setTimeout(() => this.save(), this.autosave ?? 5000).unref();
         process.once("beforeExit", () => this.close());
         this.once("close", () => {
           if (!this.closed) {
@@ -190,15 +195,17 @@ export class Database extends EventEmitter {
     for (const tableKey in fileContents.tables) {
       if (Object.prototype.hasOwnProperty.call(fileContents.tables, tableKey)) {
         const table = this.content.tables[tableKey];
-        const tableContent: { [key: string]: any } | any[] = table.fromJson(fileContents.tables[tableKey]);
-        if (Array.isArray(tableContent)) {
-          for (let index = 0; index < tableContent.length; index++) {
-            table.add(tableContent[index]);
-          }
-        } else {
-          for (const key in tableContent) {
-            if (Object.prototype.hasOwnProperty.call(tableContent, key)) {
-              table.add(tableContent[key]);
+        if (typeof table !== "undefined") {
+          const tableContent: { [key: string]: any } | any[] = table.fromJson(fileContents.tables[tableKey]);
+          if (Array.isArray(tableContent)) {
+            for (let index = 0; index < tableContent.length; index++) {
+              table.add(tableContent[index]);
+            }
+          } else {
+            for (const key in tableContent) {
+              if (Object.prototype.hasOwnProperty.call(tableContent, key)) {
+                table.add(tableContent[key]);
+              }
             }
           }
         }
@@ -222,6 +229,10 @@ export class Database extends EventEmitter {
     // throw new Error("Method not implemented.");
   }
 
+  private setShouldSaveToTrue(): void {
+    this.shouldSave = true;
+  }
+
   public close(): void {
     this.emit("close");
     this.file?.close();
@@ -232,6 +243,7 @@ export class Database extends EventEmitter {
   public addTable(key: string, table: BasicTable): BasicTable {
     if (!this.started) {
       this.content.tables[key] = table;
+      table.on("stateChange", this.setShouldSaveToTrue);
       return table;
     } else {
       throw new Error("Cannot modify tables after database started!");
@@ -242,6 +254,7 @@ export class Database extends EventEmitter {
     if (!this.started) {
       const table = this.content.tables[key];
       delete this.content.tables[key];
+      table.off("stateChange", this.setShouldSaveToTrue);
       return table;
     } else {
       throw new Error("Cannot modify tables after database started!");
