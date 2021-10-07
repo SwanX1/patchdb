@@ -20,6 +20,7 @@ export interface BasicTable<ContentSchema extends any = unknown> extends EventEm
   add(obj: ContentSchema): void;
   get(key: string | number): ContentSchema | undefined;
   set(key: string | number, obj: ContentSchema): void;
+  getAll(): ContentSchema[];
   on(event: "stateChange", listener: () => void): this;
 }
 
@@ -48,6 +49,22 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
     this.schemaFromJson = schemaFromJson;
     this.schemaToJson = schemaToJson;
     this.on("stateChange", () => this.shouldUseCache = false);
+  }
+
+  public getAll(): ContentSchema[] {
+    let contentArray: ContentSchema[];
+    if (Array.isArray(this.content)) {
+      contentArray = [];
+    } else {
+      contentArray = [];
+      for (const key in this.content) {
+        if (Object.prototype.hasOwnProperty.call(this.content, key)) {
+          const element = this.content[key];
+          contentArray.push(element);
+        }
+      }
+    }
+    return contentArray;
   }
 
   public add(obj: ContentSchema): void {
