@@ -15,7 +15,7 @@ export interface DatabaseOptions {
 export type SchemaObj<HasKey extends boolean = boolean> = HasKey extends true ? { key: string } : {};
 
 export interface BasicTable<ContentSchema extends any = unknown> extends EventEmitter {
-  fromJson(obj: JSONParsable): { [key: string]: ContentSchema } | ContentSchema[];
+  fromJson(obj: JSONParsable, key: string | number): { [key: string]: ContentSchema } | ContentSchema[];
   toJson(): JSONParsable;
   add(obj: ContentSchema): void;
   get(key: string | number): ContentSchema | undefined;
@@ -34,12 +34,12 @@ export interface BasicTable<ContentSchema extends any = unknown> extends EventEm
  */
 export class Table<ContentSchema extends {} | { key: string } = {}> extends EventEmitter implements BasicTable<ContentSchema> {
   private content: { [key: string]: ContentSchema } | ContentSchema[];
-  private schemaFromJson: (obj: JSONObject) => ContentSchema;
+  private schemaFromJson: (obj: JSONObject, key: string | number) => ContentSchema;
   private schemaToJson: (obj: ContentSchema) => JSONObject;
   private shouldUseCache: boolean = false;
   private cachedContentJson?: JSONObject | JSONParsable[];
 
-  constructor(hasPrimaryKey: boolean, schemaFromJson: (obj: JSONObject) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
+  constructor(hasPrimaryKey: boolean, schemaFromJson: (obj: JSONObject, key: string | number) => ContentSchema, schemaToJson: (obj: ContentSchema) => JSONObject) {
     super();
     if (hasPrimaryKey) {
       this.content = {};
@@ -120,8 +120,8 @@ export class Table<ContentSchema extends {} | { key: string } = {}> extends Even
   }
 
 
-  public fromJson(obj: JSONObject[]): ContentSchema[];
-  public fromJson(obj: { [key: string]: JSONObject }): { [key: string]: ContentSchema };
+  public fromJson(obj: JSONObject[], key: number): ContentSchema[];
+  public fromJson(obj: { [key: string]: JSONObject }, key: string): { [key: string]: ContentSchema };
   public fromJson(given: { [key: string]: JSONObject } | JSONObject[]): { [key: string]: ContentSchema } | ContentSchema[] {
     if (Array.isArray(given)) {
       return given.map(this.schemaFromJson);
@@ -213,7 +213,7 @@ export class Database extends EventEmitter {
       if (Object.prototype.hasOwnProperty.call(fileContents.tables, tableKey)) {
         const table = this.content.tables[tableKey];
         if (typeof table !== "undefined") {
-          const tableContent: { [key: string]: any } | any[] = table.fromJson(fileContents.tables[tableKey]);
+          const tableContent: { [key: string]: any } | any[] = table.fromJson(fileContents.tables[tableKey], tableKey);
           if (Array.isArray(tableContent)) {
             for (let index = 0; index < tableContent.length; index++) {
               table.add(tableContent[index]);
