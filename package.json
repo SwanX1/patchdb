@@ -35,8 +35,8 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
-    "@types/node": "^16.10.1",
-    "typedoc": "^0.22.4",
+    "@types/node": "^16.11.1",
+    "typedoc": "^0.22.5",
     "typescript": "next"
   },
   "engines": {
