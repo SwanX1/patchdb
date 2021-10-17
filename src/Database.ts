@@ -239,7 +239,7 @@ export class Database extends EventEmitter {
     if (this.shouldSave && !this.isSaving) {
       this.isSaving = true;
       this.shouldSave = false;
-      const writeValue = Buffer.from(JSON.stringify(this.content, (_key, value) => typeof value.toJson === "function" ? value.toJson() : value));
+      const writeValue = Buffer.from(JSON.stringify(this.content, (_key, value) => typeof value?.toJson === "function" ? value.toJson() : value));
       this.file?.write(writeValue, 0, writeValue.length, 0);
       this.file?.truncate(writeValue.length);
       this.isSaving = false;
